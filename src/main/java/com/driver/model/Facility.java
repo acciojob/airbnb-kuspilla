@@ -8,4 +8,5 @@ public enum Facility {
     FOOD,
     PARKING,
     LAUNDRY
+
 }

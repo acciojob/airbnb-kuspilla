@@ -17,9 +17,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static com.fasterxml.jackson.databind.type.LogicalType.Map;
+
 @RestController
 @RequestMapping("/hotel")
 public class HotelManagementController {
+   public HashMap<Integer, User> userDB =new HashMap<>();
+   public HashMap<String, Hotel> hotelDB = new HashMap<>();
+   public HashMap<String, Booking> bookingDb = new HashMap<>();
 
     @PostMapping("/add-hotel")
     public String addHotel(@RequestBody Hotel hotel){
@@ -29,8 +34,11 @@ public class HotelManagementController {
         //Incase somebody is trying to add the duplicate hotelName return FAILURE
         //in all other cases return SUCCESS after successfully adding the hotel to the hotelDb.
 
+        if( hotel == null) return "FAILURE";
+        if( userDB.containsKey(hotel.getHotelName())) return "Alreay aded";
 
-        return null;
+            hotelDB.put(hotel.getHotelName(),hotel );
+        return "SUCCESS after successfully adding the hotel to the hotelDb.";
     }
 
     @PostMapping("/add-user")
@@ -38,8 +46,17 @@ public class HotelManagementController {
 
         //You need to add a User Object to the database
         //Assume that user will always be a valid user and return the aadharCardNo of the user
+         if(user == null || valid_user_and_aadhar(user)) return null;
+             userDB.put( user.getaadharCardNo(),user );
 
-       return null;
+       return user.getaadharCardNo();
+    }
+    public  boolean valid_user_and_aadhar(User user){
+        if( userDB.size() == 0) {
+            return true;
+        }
+        if( userDB.containsKey((user.getaadharCardNo()))) return false;
+        return true;
     }
 
     @GetMapping("/get-hotel-with-most-facilities")
@@ -49,7 +66,25 @@ public class HotelManagementController {
         //Incase there is a tie return the lexicographically smaller hotelName
         //Incase there is not even a single hotel with atleast 1 facility return "" (empty string)
 
-        return null;
+        int maxFacilities = 0;
+        String hotelWithMostFacilities = "";
+
+        // Find the hotel with the most facilities
+        for (String nam : hotelDB.keySet()) {
+            Hotel hotel = hotelDB.get(nam);
+            int numFacilities = hotel.getFacilities().size();
+            if (numFacilities > maxFacilities) {
+                maxFacilities = numFacilities;
+                hotelWithMostFacilities = hotel.getHotelName();
+            } else if (numFacilities == maxFacilities) {
+                // Compare hotel names lexicographically in case of a tie
+                if (hotel.getHotelName().compareTo(hotelWithMostFacilities) < 0) {
+                    hotelWithMostFacilities = hotel.getHotelName();
+                }
+            }
+        }
+
+        return hotelWithMostFacilities;
     }
 
     @PostMapping("/book-a-room")
@@ -59,16 +94,40 @@ public class HotelManagementController {
         //Have bookingId as a random UUID generated String
         //save the booking Entity and keep the bookingId as a primary key
         //Calculate the total amount paid by the person based on no. of rooms booked and price of the room per night.
-        //If there arent enough rooms available in the hotel that we are trying to book return -1 
-        //in other case return total amount paid 
-        
-        return 0;
+        //If there arent enough rooms available in the hotel that we are trying to book return -1
+        //in other case return total amount paid
+        for( String name : hotelDB.keySet()){
+            Hotel hotel = hotelDB.get(name);
+            if(hotel.getAvailableRooms() >= 1){
+                int rooms = hotel.getAvailableRooms();
+                int cost = hotel.getPricePerNight();
+
+                if( rooms >= booking.getNoOfRooms()){
+                    if( cost == booking.getAmountToBePaid()){
+                        bookingDb.put( booking.getBookingId(), booking);
+                      int prasent_rooms = hotel.getAvailableRooms() - booking.getNoOfRooms();
+                      hotel.setAvailableRooms(prasent_rooms);
+                      return booking.getAmountToBePaid();
+                    }
+                }
+
+            }
+        }
+
+
+        return -1;
     }
     
     @GetMapping("/get-bookings-by-a-person/{aadharCard}")
     public int getBookings(@PathVariable("aadharCard")Integer aadharCard)
     {
-        //In this function return the bookings done by a person 
+        //In this function return the bookings done by a person
+         for( String booking_id : bookingDb.keySet()){
+             Booking book_p = bookingDb.get(booking_id);
+             if( book_p.getBookingAadharCard() == aadharCard) {
+                 return book_p.getNoOfRooms();
+             }
+         }
         return 0;
     }
 
@@ -79,6 +138,12 @@ public class HotelManagementController {
         //If the hotel is already having that facility ignore that facility otherwise add that facility in the hotelDb
         //return the final updated List of facilities and also update that in your hotelDb
         //Note that newFacilities can also have duplicate facilities possible
+
+              if( hotelDB.equals( hotelName)){
+                  Hotel hotel_a = hotelDB.get(hotelName);
+                   hotel_a.setFacilities( newFacilities);
+                   return hotel_a;
+              }
         return null;
     }
 
