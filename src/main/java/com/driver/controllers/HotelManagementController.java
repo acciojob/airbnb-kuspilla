@@ -28,7 +28,6 @@ public class HotelManagementController {
    public HashMap<String, Hotel> hotelDB = new HashMap<>();
    public HashMap<String, Booking> bookingDb = new HashMap<>();
 
-   HotelManagementController ser_obj = new HotelManagementController();
     @PostMapping("/add-hotel")
     public String addHotel(@RequestBody Hotel hotel) {
 
