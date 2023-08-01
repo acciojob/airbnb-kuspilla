@@ -15,18 +15,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.*;
-
 import static com.fasterxml.jackson.databind.type.LogicalType.Map;
 
 @RestController
 @RequestMapping("/hotel")
-@Repository
-
-
 public class HotelManagementController {
    public HashMap<Integer, User> userDB =new HashMap<>();
    public HashMap<String, Hotel> hotelDB = new HashMap<>();
    public HashMap<String, Booking> bookingDb = new HashMap<>();
+   public HashMap<Integer,Integer> count_booking = new HashMap<>();
 
     @PostMapping("/add-hotel")
     public String addHotel(@RequestBody Hotel hotel) {
@@ -76,6 +73,11 @@ public class HotelManagementController {
                 max = size;
                 hotel_name = hotel.getHotelName();
             }
+            else if( size == max){
+                if( hotel.getHotelName().compareTo(hotel_name) < 3){
+                    hotel_name = hotel.getHotelName();
+                }
+            }
         }
         return hotel_name;
     }
@@ -90,50 +92,24 @@ public class HotelManagementController {
         //If there arent enough rooms available in the hotel that we are trying to book return -1
         //in other case return total amount paid
 
-//        for( String name : hotelDB.keySet()){
-//            Hotel hotel = hotelDB.get(name);
-//            if(hotel.getAvailableRooms() >= 1){
-//                int rooms = hotel.getAvailableRooms();
-//                int cost = hotel.getPricePerNight();
-//
-//                if( rooms >= booking.getNoOfRooms()){
-//                    if( cost == booking.getAmountToBePaid()){
-//                        bookingDb.put( booking.getBookingId(), booking);
-//                      int prasent_rooms = hotel.getAvailableRooms() - booking.getNoOfRooms();
-//                      hotel.setAvailableRooms(prasent_rooms);
-//                      return booking.getAmountToBePaid();
-//                    }
-//                }
-//
-//            }
-//        }
-//
-//
-//        return -1;
-        Hotel_management_service service = new Hotel_management_service();
-        HashSet<Integer>  repo_id= service.random_id;
-        int no_of_rooms = booking.getNoOfRooms();
-        int id = service.generate_random_id();
-        int price_per_night =  get_room_price(booking ,id+"");
-        if(price_per_night==-1)
-            return -1;
-        int amount_to_be_pair = no_of_rooms*price_per_night;
-        return amount_to_be_pair;
+        String key = UUID.randomUUID().toString();
+        booking.setBookingId(key);
+        String hotel_name = booking.getHotelName();
+        Hotel hotel =  hotelDB.get(hotel_name);
+
+      if(hotel.getAvailableRooms() < booking.getNoOfRooms()){
+          return -1;
+      }
+       int amount_to_paind = booking.getNoOfRooms() * hotel.getPricePerNight();
+        hotel.setAvailableRooms( hotel.getAvailableRooms() - booking.getNoOfRooms());
+        bookingDb.put(hotel_name, booking);
+        return amount_to_paind;
+
+
+
 
     }
 
-    public int get_room_price(Booking book,String id)
-    {
-        Integer temp = hotelDB.get(book.getHotelName()).getAvailableRooms();
-                int avialable_rooms = temp == null ? 0:temp;
-        if(book.getNoOfRooms()>avialable_rooms )
-            return -1;
-        bookingDb.put(id,book);
-        String hot_name = book.getHotelName();
-        int hot_price_per_night = hotelDB.get(hot_name).getPricePerNight();
-        return hot_price_per_night;
-    }
-    
     @GetMapping("/get-bookings-by-a-person/{aadharCard}")
     public int getBookings(@PathVariable("aadharCard")Integer aadharCard)
     {
@@ -165,6 +141,7 @@ public class HotelManagementController {
             }
         }
            hotel.setFacilities(ans);
+        hotelDB.put(hotelName, hotel);
         return hotel;
     }
 
